@@ -25,6 +25,9 @@ router.post('/verify-manual', protect, async (req, res) => {
             });
             await payment.save();
 
+            // Send response immediately to avoid waiting for notifications
+            res.json({ message: 'Payment details submitted for verification' });
+
             // 3. Send Notifications now that UTR is submitted
             const BusinessSettings = require('../models/BusinessSettings');
             const { notifyOrderStatus, notifyAdminNewOrder } = require('../utils/notificationService');
@@ -40,12 +43,12 @@ router.post('/verify-manual', protect, async (req, res) => {
                 await notifyAdminNewOrder(populatedOrder, settings.adminPhone);
             }
 
-            res.json({ message: 'Payment details submitted for verification' });
         } else {
-            res.status(404).json({ message: 'Order not found' });
+            if (!res.headersSent) res.status(404).json({ message: 'Order not found' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Error processing payment', error: error.message });
+        console.error('Payment Verification Error:', error);
+        if (!res.headersSent) res.status(500).json({ message: 'Error processing payment', error: error.message });
     }
 });
 
