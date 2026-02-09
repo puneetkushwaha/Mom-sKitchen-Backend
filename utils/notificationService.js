@@ -17,7 +17,11 @@ const transporter = nodemailer.createTransport({
  * @param {string} html - HTML Content (For Invoices)
  */
 const sendEmailNotification = async (to, subject, text, html = null) => {
-    if (!to) return;
+    console.log(`[DEBUG] Attempting to send EMAIL to: ${to}`);
+    if (!to) {
+        console.log('[DEBUG] Email skipped: No recipient');
+        return;
+    }
     try {
         const info = await transporter.sendMail({
             from: `"Cloud Kitchen" <${process.env.EMAIL_USER}>`,
@@ -26,9 +30,9 @@ const sendEmailNotification = async (to, subject, text, html = null) => {
             text,
             html: html || text
         });
-        console.log('Email sent: %s', info.messageId);
+        console.log('[DEBUG] Email sent successfully: %s', info.messageId);
     } catch (error) {
-        console.error('Email Error:', error.message);
+        console.error('[ERROR] Email Failed:', error.message);
     }
 };
 
@@ -38,12 +42,13 @@ const sendEmailNotification = async (to, subject, text, html = null) => {
  * @param {string} message - Message body
  */
 const sendSMSNotification = async (phone, message) => {
+    console.log(`[DEBUG] Attempting to send SMS to: ${phone}`);
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     const from = process.env.TWILIO_PHONE_NUMBER; // Outgoing SMS number
 
     if (!sid || sid === 'your_sid_here') {
-        console.log(`[SMS LOG]: to ${phone} -> ${message}`);
+        console.log(`[DEBUG] SMS Skipped (Missing/Default Config): to ${phone} -> ${message}`);
         return;
     }
 
@@ -56,9 +61,9 @@ const sendSMSNotification = async (phone, message) => {
             from: from,
             to: formattedPhone
         });
-        console.log(`SMS Alert sent to ${phone}`);
+        console.log(`[DEBUG] SMS sent successfully to ${phone}`);
     } catch (error) {
-        console.error('SMS Error:', error.message);
+        console.error('[ERROR] SMS Failed:', error.message);
     }
 };
 
@@ -68,12 +73,13 @@ const sendSMSNotification = async (phone, message) => {
  * @param {string} message - Message body
  */
 const sendWhatsAppNotification = async (phone, message) => {
+    console.log(`[DEBUG] Attempting to send WhatsApp to: ${phone}`);
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     const from = process.env.TWILIO_WHATSAPP_NUMBER;
 
     if (!sid || sid === 'your_sid_here') {
-        console.log(`[WhatsApp LOG]: to ${phone} -> ${message}`);
+        console.log(`[DEBUG] WhatsApp Skipped (Missing/Default Config): to ${phone} -> ${message}`);
         return;
     }
 
@@ -86,9 +92,9 @@ const sendWhatsAppNotification = async (phone, message) => {
             body: message,
             to: `whatsapp:${formattedPhone}`
         });
-        console.log(`WhatsApp Alert sent to ${phone}`);
+        console.log(`[DEBUG] WhatsApp sent successfully to ${phone}`);
     } catch (error) {
-        console.error('WhatsApp Error:', error.message);
+        console.error('[ERROR] WhatsApp Failed:', error.message);
     }
 };
 
@@ -99,6 +105,7 @@ const sendWhatsAppNotification = async (phone, message) => {
  */
 const notifyAdminNewOrder = async (order, adminPhone) => {
     if (!adminPhone) return;
+    console.log(`[DEBUG] Notifying Admin (${adminPhone}) for Order #${order.orderId}`);
 
     const orderId = order.orderId || order._id.toString().slice(-6).toUpperCase();
     const message = `🔔 *New Order Received!*\nOrder ID: #${orderId}\nCustomer: ${order.user?.name || 'Guest'}\nAmount: ₹${order.payableAmount}\nPayment: ${order.paymentMode}\nItems: ${order.items.length}\nCheck dashboard for details.`;
@@ -112,10 +119,15 @@ const notifyAdminNewOrder = async (order, adminPhone) => {
  * @param {string} status - Current status
  */
 const notifyOrderStatus = async (order, status) => {
-    if (!order || !order.user) return;
+    if (!order || !order.user) {
+        console.log('[DEBUG] Notification skipped: Missing order/user data');
+        return;
+    }
 
     const { name, phone, email } = order.user;
     const orderId = order.orderId || order._id.toString().slice(-6).toUpperCase();
+
+    console.log(`[DEBUG] Preparing '${status}' notification for Order #${orderId} (User: ${name})`);
 
     let message = '';
     let subject = '';
