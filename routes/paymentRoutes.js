@@ -43,6 +43,9 @@ router.post('/verify-manual', protect, async (req, res) => {
                 await notifyAdminNewOrder(populatedOrder, settings.adminPhone);
             }
 
+            // Real-time Notification for Admin Dashboard
+            req.app.get('io').emit('newOrder', populatedOrder);
+
         } else {
             if (!res.headersSent) res.status(404).json({ message: 'Order not found' });
         }
